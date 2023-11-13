@@ -1,0 +1,9 @@
+# sole_nvs.csv, partitions for sole programs with larger nvs_ext
+# partition for storing data
+# klin, 10.07.2022
+# modified from huge_app.csv
+# name,   type, subtype, offset,   size,    flags
+nvs,      data, nvs,     0x9000,   0x7000,
+app0,     app,  factory,   0x10000,  0x300000,
+nvs_ext,  data, nvs,     0x310000, 0xf0000,
+
