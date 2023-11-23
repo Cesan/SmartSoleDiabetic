@@ -32,8 +32,8 @@ uint16_t sensor_handle;
 uint8_t rx_handle_buf[64];
 uint16_t rx_handle;
 
-static ble_uuid128_t service_uuid = BLE_UUID128_INIT(0x9e, 0xca, 0xdc, 0x24, 0x0e, 0xe5, 0xa9, 0xe0, 0x93, 0xf3, 0xa3,
-                                                     0xb5, 0x01, 0x00, 0x40, 0x6e);
+static const ble_uuid128_t service_uuid =
+    BLE_UUID128_INIT(0x9e, 0xca, 0xdc, 0x24, 0x0e, 0xe5, 0xa9, 0xe0, 0x93, 0xf3, 0xa3, 0xb5, 0x01, 0x00, 0x40, 0x6e);
 
 static void ble_start_advertising();
 
@@ -193,8 +193,7 @@ static void ble_start_advertising() {
 
     // Sets the advertised uuid to the service uuid for the sole-ble server so the app can connect
     fields.uuids128 = (ble_uuid128_t[]) {
-        BLE_UUID128_INIT(0x9e, 0xca, 0xdc, 0x24, 0x0e, 0xe5, 0xa9, 0xe0, 0x93, 0xf3, 0xa3, 0xb5, 0x01, 0x00,
-                         0x40, 0x6e)
+        service_uuid
     };
     fields.num_uuids128 = 1;
     fields.uuids128_is_complete = 1;
@@ -223,10 +222,13 @@ static void ble_start_advertising() {
 
     /*
      * Allow undirected connection
-     * Allow generic discovery
+     * Make general discoverable
      */
     adv_params.conn_mode = BLE_GAP_CONN_MODE_UND;
     adv_params.disc_mode = BLE_GAP_DISC_MODE_GEN;
+
+//    adv_params.itvl_min = 500;
+//    adv_params.itvl_max = 2000;
 
     res = ble_gap_adv_start(addr_type, NULL, BLE_HS_FOREVER, &adv_params, gap_event_cb, NULL);
     if (res != 0) {
@@ -431,25 +433,25 @@ static const struct ble_gatt_svc_def gatt_srv_services[] = {
     {
         .type = BLE_GATT_SVC_TYPE_PRIMARY,
         .uuid = (ble_uuid_t *) &service_uuid,
-        .characteristics = (struct ble_gatt_chr_def[])
-            {{
-                 .uuid = BLE_UUID128_DECLARE(0x9e, 0xca, 0xdc, 0x24, 0x0e, 0xe5, 0xa9, 0xe0, 0x93, 0xf3, 0xa3, 0xb5,
-                                             0x02, 0x00, 0x40, 0x6e),
-                 .access_cb = gatt_characteristic_access_cb,
-                 .val_handle = &rx_handle,
-                 .flags = BLE_GATT_CHR_F_WRITE | BLE_ATT_F_WRITE_ENC
-             },
-             {
-                 .uuid = BLE_UUID128_DECLARE(0x9e, 0xca, 0xdc, 0x24, 0x0e, 0xe5, 0xa9, 0xe0, 0x93, 0xf3, 0xa3, 0xb5,
-                                             0x03, 0x00, 0x40, 0x6e),
-                 .access_cb = gatt_characteristic_access_cb,
-                 .val_handle = &sensor_handle,
-                 .flags = BLE_GATT_CHR_F_NOTIFY
-             },
-             {
-                 0
-             }
+        .characteristics = (struct ble_gatt_chr_def[]) {
+            {
+                .uuid = BLE_UUID128_DECLARE(0x9e, 0xca, 0xdc, 0x24, 0x0e, 0xe5, 0xa9, 0xe0, 0x93, 0xf3, 0xa3, 0xb5,
+                                            0x02, 0x00, 0x40, 0x6e),
+                .access_cb = gatt_characteristic_access_cb,
+                .val_handle = &rx_handle,
+                .flags = BLE_GATT_CHR_F_WRITE_NO_RSP | BLE_GATT_CHR_F_WRITE
+            },
+            {
+                .uuid = BLE_UUID128_DECLARE(0x9e, 0xca, 0xdc, 0x24, 0x0e, 0xe5, 0xa9, 0xe0, 0x93, 0xf3, 0xa3, 0xb5,
+                                            0x03, 0x00, 0x40, 0x6e),
+                .access_cb = gatt_characteristic_access_cb,
+                .val_handle = &sensor_handle,
+                .flags = BLE_GATT_CHR_F_NOTIFY
+            },
+            {
+                0
             }
+        }
     },
     {
         0
@@ -516,4 +518,5 @@ void ble_host_start() {
 
 static void close_connection() {
     sensors_stop_measurement_task();
+    sensors_stop_data_play_task();
 }

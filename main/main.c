@@ -2,15 +2,10 @@
 #include <esp_pm.h>
 #include <esp_private/esp_clk.h>
 #include "nimble/nimble_port.h"
-#include "nimble/nimble_port_freertos.h"
-#include "nimble/ble.h"
 #include "host/ble_hs.h"
-#include "host/util/util.h"
 #include "services/gap/ble_svc_gap.h"
-#include "services/gatt/ble_svc_gatt.h"
 #include "ble_host.h"
 #include "sensors.h"
-#include "esp_task_wdt.h"
 
 static const char *TAG = "ai-sole";
 
@@ -39,6 +34,8 @@ void app_main() {
     } else {
         ESP_LOGI(TAG, "i2c init successful");
     }
+
+    sensors_init_all();
 
     res = nvs_flash_init();
     if (res != 0) {
@@ -72,8 +69,6 @@ void app_main() {
     assert(res == 0);
 
     ESP_LOGI(TAG, "ble gap device name set successful");
-
-    sensors_init_all();
 
     ble_host_start();
 }

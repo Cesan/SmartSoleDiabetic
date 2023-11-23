@@ -6,8 +6,6 @@
 #include "driver/i2c.h"
 #include "host/ble_hs.h"
 #include "host/ble_uuid.h"
-#include "services/gap/ble_svc_gap.h"
-#include "services/gatt/ble_svc_gatt.h"
 #include "esp_partition.h"
 #include "nvs.h"
 #include "ble_host.h"
@@ -53,6 +51,26 @@ _Noreturn static void read_sensor_loop();
 
 static void data_play_loop();
 
+/**
+ * @brief Perform a write followed by a read to a device on the I2C bus.
+ *        A repeated start signal is used between the `write` and `read`, thus, the bus is
+ *        not released until the two transactions are finished.
+ *        This function is a wrapper to 'i2c_master_write_read_device'
+ *        It shall only be called in I2C master mode.
+ *
+ * @param device_address I2C device's 7-bit address
+ * @param write_buf Bytes to send on the bus
+ * @param write_len Length, in bytes, of the write buffer
+ * @param read_buf Buffer to store the bytes received on the bus
+ * @param read_len Length, in bytes, of the read buffer
+ *
+ * @return
+ *     - ESP_OK Success
+ *     - ESP_ERR_INVALID_ARG Parameter error
+ *     - ESP_FAIL Sending command error, slave hasn't ACK the transfer.
+ *     - ESP_ERR_INVALID_STATE I2C driver not installed or not in master mode.
+ *     - ESP_ERR_TIMEOUT Operation timeout because the bus is busy.
+ */
 esp_err_t read_from_device(uint8_t device_address, const uint8_t *write_buf, uint8_t write_len, uint8_t *read_buf,
                            uint8_t read_len) {
     return i2c_master_write_read_device(I2C_NUM_0, device_address,
@@ -61,6 +79,22 @@ esp_err_t read_from_device(uint8_t device_address, const uint8_t *write_buf, uin
                                         pdMS_TO_TICKS(2));
 }
 
+/**
+ * @brief Perform a write to a device connected to a particular I2C port.
+ *        This function is a wrapper to 'i2c_master_write_to_device'
+ *        It shall only be called in I2C master mode.
+ *
+ * @param device_address I2C device's 7-bit address
+ * @param write_buf Bytes to send on the bus
+ * @param write_len Length, in bytes, of the write buffer
+ *
+ * @return
+ *     - ESP_OK Success
+ *     - ESP_ERR_INVALID_ARG Parameter error
+ *     - ESP_FAIL Sending command error, slave hasn't ACK the transfer.
+ *     - ESP_ERR_INVALID_STATE I2C driver not installed or not in master mode.
+ *     - ESP_ERR_TIMEOUT Operation timeout because the bus is busy.
+ */
 esp_err_t write_to_device(uint8_t device_address, const uint8_t *write_buf, uint8_t write_len) {
     return i2c_master_write_to_device(I2C_NUM_0, device_address,
                                       write_buf, write_len,
@@ -82,6 +116,10 @@ esp_err_t sensors_i2c_init() {
     return i2c_driver_install(I2C_NUM_0, cfg.mode, 0, 0, 0);
 }
 
+/**
+ * Inits the max31725 sensor for continuous conversion and starts it
+ * @param address - The 8 bit address of the device (gets bit-shifted internally)
+ */
 int sensor_init(uint8_t address) {
     ESP_LOGD(TAG, "Init at 0x%02x ...", address);
 
@@ -216,7 +254,7 @@ void save_sensor_data(sensor_data_t *sensor_data) {
         goto end;
     }
 
-    esp_partition_write(partition, address_offset, &((uint8_t *) sensor_data)[4], sizeof(sensor_data_t) - 4);
+    esp_partition_write(partition, address_offset, &sensor_data->time, sizeof(sensor_data_t) - 4);
 
     address_offset += sizeof(sensor_data_t) - 4;
 

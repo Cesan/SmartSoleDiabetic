@@ -27,11 +27,7 @@ typedef struct __attribute__((packed)) sensor_data {
  */
 esp_err_t sensors_i2c_init();
 
-/**
- * Inits the max31725 sensor for continuous conversion and starts it
- * @param address - The 8 bit address of the device (gets bit-shifted internally)
- */
-int sensor_init(uint8_t address);
+//int sensor_init(uint8_t address);
 
 /**
  * Inits all available sensors in the sole
