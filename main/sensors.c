@@ -29,7 +29,7 @@ static uint32_t address_offset = 0;
 
 // max31725 sensors i2c addresses in the sole
 // sensor u1 is not used
-uint8_t sensorAddress[MAX_SENSORS] = {
+uint8_t sensor_address[MAX_SENSORS] = {
     // u1    u2    u3    u4    u5    u6    u7    u8
     0x92, 0x82, 0x80, 0x94, 0x96, 0x86, 0x84,
     // u9    u10   u11   u12   u13   u14   u15   u16
@@ -127,8 +127,8 @@ int sensor_init(uint8_t address) {
 
     // Access config
     i2c_wbuf[0] = 0x01;
-    // Set for continuous conversion
-    i2c_wbuf[1] = 0x00;
+    // Set to shutdown-mode for usage with one-shot operation
+    i2c_wbuf[1] = MAX_31725_SHUTDOWN;
 
     int res = write_to_device(address, i2c_wbuf, 2);
     if (res != 0)
@@ -147,7 +147,7 @@ void sensors_init_all() {
     int res;
 
     for (int i = 0; i < MAX_SENSORS; i++) {
-        res = sensor_init(sensorAddress[i]);
+        res = sensor_init(sensor_address[i]);
 
         if (res != ESP_OK)
             ESP_LOGW(TAG, "Failed to initialize sensor %d with error 0x%02x", i, res);
@@ -312,12 +312,23 @@ _Noreturn static void read_sensor_loop() {
         data.data_flag = 11;
         data.time = current_time;
 
-        //memcpy((void *) &tx_buf[0], (void *) &data_counter, 4);
-        //memcpy((void *) &tx_buf[4], (void *) &current_time, 4);
+        i2c_wbuf[0] = 0x01;
+        i2c_wbuf[1] = MAX_31725_ONE_SHOT | MAX_31725_SHUTDOWN;
+
+        for (int i = 0; i < MAX_SENSORS; i++) {
+            write_to_device(sensor_address[i] >> 1, i2c_wbuf, 2);
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(50));
+
+        read_from_device(sensor_address[MAX_SENSORS - 1] >> 1, i2c_wbuf, 1, i2c_rbuf, 1);
+
+        if ((i2c_rbuf[0] & MAX_31725_ONE_SHOT) != 0) {
+            ESP_LOGW(TAG, "Sensors temperature not ready after 50ms");
+        }
 
         for (int i = 0; i < MAX_SENSORS; ++i) {
-            data.sensor_values[i] = read_sensor(sensorAddress[i]);
-            //tx_buf[i + 8] = read_sensor(sensorAddress[i]);
+            data.sensor_values[i] = read_sensor(sensor_address[i]);
         }
 
         //ESP_LOGD(TAG, "* #%u time:%llu temperatures:%.1f %.1f %.1f ...\n", 0, current_time, (float) tx_buf[8] / 2.0,

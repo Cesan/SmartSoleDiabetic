@@ -12,22 +12,22 @@ static const char *TAG = "ai-sole";
 void app_main() {
     ESP_LOGI(TAG, "Starting...");
 
-//    esp_pm_config_t pm_config = {
-//        .max_freq_mhz = 80,
-//        .min_freq_mhz = 40,
-//        .light_sleep_enable = false
-//    };
+    esp_pm_config_t pm_config = {
+        .max_freq_mhz = 80,
+        .min_freq_mhz = 40,
+        .light_sleep_enable = false
+    };
 
-//    int res = esp_pm_configure(&pm_config);
-//    assert(res == 0);
+    int res = esp_pm_configure(&pm_config);
+    assert(res == 0);
 
-//    vTaskDelay(pdMS_TO_TICKS(10));
+    vTaskDelay(pdMS_TO_TICKS(10));
 
-//    int freq = esp_clk_cpu_freq();
-//
-//    ESP_LOGI(TAG, "Current cpu frequency is: %d", freq);
+    int freq = esp_clk_cpu_freq();
 
-    esp_err_t res = sensors_i2c_init();
+    ESP_LOGI(TAG, "Current cpu frequency is: %d", freq);
+
+    res = sensors_i2c_init();
     if (res != 0) {
         ESP_LOGE(TAG, "i2c init returned error %d", res);
         return;

@@ -100,6 +100,23 @@ int gap_event_cb(struct ble_gap_event *event, void *arg) {
             assert(res == 0);
 
             return 0;
+        case BLE_GAP_EVENT_CONN_UPDATE_REQ:
+            ESP_LOGI(TAG, "connection update request");
+
+            res = ble_gap_conn_find(event->conn_update_req.conn_handle, &desc);
+            assert(res == 0);
+
+            const struct ble_gap_upd_params *peer = event->conn_update_req.peer_params;
+
+            ESP_LOGI(TAG, "Peer params, itvl: %d - %d, con_evt_len: %d - %d, timeout: %d", peer->itvl_min,
+                     peer->itvl_max, peer->min_ce_len, peer->max_ce_len, peer->supervision_timeout);
+
+            struct ble_gap_upd_params *self = event->conn_update_req.self_params;
+
+            ESP_LOGI(TAG, "Self params, itvl: %d - %d, con_evt_len: %d - %d, timeout: %d", self->itvl_min,
+                     self->itvl_max, self->min_ce_len, self->max_ce_len, self->supervision_timeout);
+
+            return 0;
         case BLE_GAP_EVENT_ADV_COMPLETE:
             ESP_LOGI(TAG, "advertise complete, reason = %d", event->adv_complete.reason);
 
@@ -137,6 +154,18 @@ int gap_event_cb(struct ble_gap_event *event, void *arg) {
             if (event->subscribe.attr_handle == sensor_handle && event->subscribe.cur_notify == 1) {
                 // Notify device of current saved data count on subscription
                 sensors_notify_data_count();
+
+                struct ble_gap_upd_params params = {
+                    .itvl_min = BLE_GAP_CONN_ITVL_MS(500),
+                    .itvl_max = BLE_GAP_CONN_ITVL_MS(1500),
+                    .latency = 0,
+                    .supervision_timeout = BLE_GAP_SUPERVISION_TIMEOUT_MS(24000)
+                };
+
+                res = ble_gap_update_params(event->subscribe.conn_handle, &params);
+                if (res != ESP_OK) {
+                    ESP_LOGW(TAG, "GAP update params error with code: %d", res);
+                }
             }
 
             break;
@@ -227,8 +256,11 @@ static void ble_start_advertising() {
     adv_params.conn_mode = BLE_GAP_CONN_MODE_UND;
     adv_params.disc_mode = BLE_GAP_DISC_MODE_GEN;
 
-//    adv_params.itvl_min = 500;
-//    adv_params.itvl_max = 2000;
+    /**
+     * Set advertising interval in a range from 500-1000ms
+     */
+    adv_params.itvl_min = BLE_GAP_ADV_ITVL_MS(500);
+    adv_params.itvl_max = BLE_GAP_ADV_ITVL_MS(1000);
 
     res = ble_gap_adv_start(addr_type, NULL, BLE_HS_FOREVER, &adv_params, gap_event_cb, NULL);
     if (res != 0) {

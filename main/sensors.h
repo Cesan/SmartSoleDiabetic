@@ -7,7 +7,7 @@
 
 #define SENSOR_METADATA_MAX_ADDRESS (sizeof(SENSOR_DATA_FLAGS) + (30 * sizeof(sensor_metadata_t)))
 
-extern uint8_t sensorAddress[];
+extern uint8_t sensor_address[];
 
 typedef enum __attribute__((packed)) {
     SENSOR_DATA_STORED = 0x01,
@@ -20,6 +20,16 @@ typedef struct __attribute__((packed)) sensor_data {
     uint32_t time;
     uint8_t sensor_values[31];
 } sensor_data_t;
+
+enum MAX_31725_CONFIG {
+    MAX_31725_SHUTDOWN = 0x01,
+    MAX_31725_INTERRUPT = 0x02,
+    MAX_31725_POLARITY_ACTIVE_HIGH = 0x04,
+    MAX_31725_FAULT_QUEUE = 0x18,
+    MAX_31725_DATA_FORMAT_EXT = 0x20,
+    MAX_31725_DISABLE_TIMEOUT = 0x40,
+    MAX_31725_ONE_SHOT = 0x80,
+};
 
 /**
  * Internally initializes the i2c driver for further usage
