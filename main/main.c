@@ -1,6 +1,8 @@
 #include <nvs_flash.h>
 #include <esp_pm.h>
 #include <esp_private/esp_clk.h>
+#include <driver/gpio.h>
+#include <esp_sleep.h>
 #include "nimble/nimble_port.h"
 #include "host/ble_hs.h"
 #include "services/gap/ble_svc_gap.h"
@@ -15,7 +17,7 @@ void app_main() {
     esp_pm_config_t pm_config = {
         .max_freq_mhz = 80,
         .min_freq_mhz = 40,
-        .light_sleep_enable = false
+        .light_sleep_enable = true
     };
 
     int res = esp_pm_configure(&pm_config);

@@ -108,10 +108,16 @@ esp_err_t sensors_i2c_init() {
         .scl_io_num = SCL_IO_NUM,
         .sda_pullup_en = GPIO_PULLUP_ENABLE,
         .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        .master.clk_speed = MASTER_CLK_FREQ,
+        .master.clk_speed = MASTER_CLK_FREQ
     };
 
     i2c_param_config(I2C_NUM_0, &cfg);
+
+    gpio_sleep_set_direction(SDA_IO_NUM, GPIO_MODE_INPUT_OUTPUT_OD);
+    gpio_sleep_set_pull_mode(SDA_IO_NUM, GPIO_PULLUP_ONLY);
+
+    gpio_sleep_set_direction(SCL_IO_NUM, GPIO_MODE_INPUT_OUTPUT_OD);
+    gpio_sleep_set_pull_mode(SCL_IO_NUM, GPIO_PULLUP_ONLY);
 
     return i2c_driver_install(I2C_NUM_0, cfg.mode, 0, 0, 0);
 }
